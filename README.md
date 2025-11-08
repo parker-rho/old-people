@@ -14,6 +14,7 @@ Digital literacy for senior citizens.
 # Install build requirements
 sudo apt install nodejs npm
 sudo npm install -g terser
+pip install -r requirements.txt
 
 # Build package
 ./tools/build.sh chrome

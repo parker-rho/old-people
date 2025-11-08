@@ -168,6 +168,18 @@ class SpeechService {
         this.onTranscriptionCallback(transcription);
       }
 
+      fetch("http://127.0.0.1:5000/parse", {
+        method: "POST"
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === "success") {
+          console.log("✅ Instructions created successfully!");
+        } else {
+          console.error("❌ Python reported failure:", data.message);
+        }
+      });
+
       return transcription;
     } catch (error) {
       console.error('Error processing audio:', error);
