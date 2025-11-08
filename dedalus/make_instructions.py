@@ -1,7 +1,6 @@
 import logging
 from dotenv import load_dotenv
 from dedalus_labs import AsyncDedalus, DedalusRunner
-from dedalus_labs.utils.streaming import stream_async
 import json
 
 # Configure logging
@@ -51,10 +50,12 @@ async def make_instructions():
     logging.info("Starting instruction generation process.")
 
     result = await runner.run(
-        input="""Use your tools to read from dedalus.json and use the entire context of the conversation to
-        answer the most recent prompt by searching the internet for instructions. Then write the instructions
-        back to dedalus.json with your tools. Return True if writing was successful, False otherwise in the
-        final output.""",
+        input="""Follow these instructions strictly and do nothing else extra: 
+        1. Use your tools to read from dedalus.json and use the entire context of the conversation to
+        answer the most recent prompt by searching the internet for instructions. 
+        2. Write the instructions back to dedalus.json with your tools. 
+        3. Return True if writing was successful, False otherwise in the final output. 
+        4. Terminate entirely and stop all processing.""",
         model=["openai/gpt-5"],
         mcp_servers= "windsor/brave-search-mcp",  # Privacy-focused web search
         tools=[read_convo, write_instructions],
