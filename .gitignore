@@ -3,4 +3,4 @@ old_people.zip
 .env
 __pycache__/
 .DS_Store
-dedalus.json
+dedalus/dedalus.json
