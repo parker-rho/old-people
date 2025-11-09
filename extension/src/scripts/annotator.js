@@ -1,26 +1,13 @@
-/**
- * DOM Annotator
- * Finds interactive elements on a page, annotates them with unique IDs,
- * and creates a simplified payload for AI processing. It can then use
- * the AI's response to find and act on the original DOM element.
- */
 class DOMAnnotator {
-  /**
-   * Finds all interactive elements, annotates them with a `data-ai-id` attribute,
-   * and returns a simplified list of these elements for an AI prompt.
-   * @param {Document} doc - The document object to scan (e.g., `window.document`).
-   * @returns {Array<Object>} A list of simplified element objects.
-   */
-  static createPayloadForAI(doc = document) {
+  static createAnnotatedHtml(doc = document) {
     const interactiveElements = doc.querySelectorAll(
       'a, button, input, [role="button"], [role="link"], select, textarea, summary'
     );
 
-    const payload = [];
+    const annotated = [];
     let counter = 1;
 
     interactiveElements.forEach(element => {
-      // 1. Get relevant text
       let text = (
         element.innerText ||
         element.textContent ||
@@ -32,41 +19,34 @@ class DOMAnnotator {
         element.name
       )?.trim();
 
-      // If no text, create fallback for icon buttons
+      if (text) {
+        text = text.replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+      }
       if (!text) {
         text = `[${element.tagName.toLowerCase()}]`;
       }
 
-      // 2. Create unique ID
-      const id = `ai-${counter++}`;
+      const id = `id-${counter++}`;
 
-      // 3. Annotate DOM element
-      element.setAttribute('data-ai-id', id);
+      element.setAttribute('data-id', id);
 
-      // 4. Add simplified object to our payload
-      payload.push({
+      annotated.push({
         id: id,
         tag: element.tagName.toLowerCase(),
         text: text.substring(0, 100),
       });
     });
 
-    return payload;
+    return annotated;
   }
 
-  /**
-   * Finds an element in the DOM based on an AI response and highlights it.
-   * @param {string} aiResponseString - The raw JSON string from the AI.
-   * @param {Document} doc - The document object where the element exists.
-   * @returns {HTMLElement|null} The found element or null.
-   */
   static findAndHighlight(aiResponseString, doc = document) {
     try {
       const aiResponse = JSON.parse(aiResponseString);
 
       if (aiResponse && aiResponse.id) {
         // Use the ID to find the *original* element
-        const targetElement = doc.querySelector(`[data-ai-id="${aiResponse.id}"]`);
+        const targetElement = doc.querySelector(`[data-id="${aiResponse.id}"]`);
 
         if (targetElement) {
           console.log("Found the element:", targetElement);
@@ -87,7 +67,6 @@ class DOMAnnotator {
   }
 }
 
-// Export for use in other scripts if needed
 if (typeof window !== 'undefined') {
   window.DOMAnnotator = DOMAnnotator;
 }

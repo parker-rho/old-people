@@ -3,7 +3,7 @@
  * This script simply loads the popup HTML/CSS/JS files into the page context
  */
 
-(function() {
+(function () {
   'use strict';
 
   // Prevent multiple injections
@@ -21,7 +21,7 @@
     // Create container for the floating widget - ONLY the button
     const widgetContainer = document.createElement('div');
     widgetContainer.id = 'digital-literacy-widget';
-    
+
     // Inject ONLY the voice button (matches popup.html structure)
     widgetContainer.innerHTML = `
       <!-- Voice Interaction Button - Only this exists initially -->
@@ -87,7 +87,7 @@
         script.setAttribute('data-extension-script', src);
         script.onload = () => resolve();
         script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-        
+
         // Append to page (runs in page context, not content script context)
         (document.head || document.documentElement).appendChild(script);
       });
@@ -101,11 +101,11 @@
         }
         // popup.js will auto-initialize when it loads
         // It has its own DOMContentLoaded listener that checks for voice-button
-        
+
         // Note: Test function will be set up by popup.js in page context
         // Users can also call: window.popupController.addChatMessage("test", "user")
       } catch (error) {
-        }
+      }
     }
 
     // Load scripts when DOM is ready

@@ -11,7 +11,7 @@ class SpeechService {
     this.audioContext = null;
     this.analyser = null;
     this.silenceThreshold = 0.01; // Adjust based on testing
-    this.silenceDuration = 2000; // 2 seconds of silence to auto-stop
+    this.silenceDuration = 500; // 2 seconds of silence to auto-stop
     this.isRecording = false;
     this.onTranscriptionCallback = null;
     this.onStateChangeCallback = null;
@@ -64,27 +64,33 @@ class SpeechService {
           this.audioChunks.push(event.data);
         }
       };
-
-      this.mediaRecorder.onstop = async () => {
-        // Don't stop stream tracks here - let them be managed separately
-        // The stream is shared with waveform visualizer
-        // Only process audio if we have chunks
-        if (this.audioChunks.length > 0) {
-          await this.processAudio();
-        }
-      };
-
-      this.mediaRecorder.start();
-
-      // Start silence detection
-      this.detectSilence();
-
-      return { success: true };
-    } catch (error) {
+    }
+    catch (error) {
       const errorMessage = error?.message || error?.toString() || 'Unknown error';
       this.updateState('error', errorMessage);
       return { success: false, error: errorMessage };
     }
+
+    // Return a promise that resolves with the transcription when recording stops.
+    const transcriptionPromise = new Promise((resolve, reject) => {
+      this.mediaRecorder.onstop = async () => {
+        if (this.audioChunks.length > 0) {
+          try {
+            const transcription = await this.processAudio();
+            resolve(transcription);
+          } catch (error) {
+            reject(error);
+          }
+        } else {
+          resolve(null);
+        }
+      };
+    });
+
+    this.mediaRecorder.start();
+    this.detectSilence();
+
+    return { success: true, transcription: transcriptionPromise };
   }
 
   /**
@@ -192,22 +198,6 @@ class SpeechService {
       if (this.onTranscriptionCallback) {
         this.onTranscriptionCallback(transcription);
       }
-
-      // Calling Agent 1: annotated html + prompt => output steps
-      fetch("http://127.0.0.1:5000/parse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: transcription.text })
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === "success") {
-            console.log("✅ Instructions created successfully!");
-          } else {
-            console.error("❌ Python reported failure:", data.message);
-          }
-        })
-        .catch(err => console.error("🌐 Could not reach server:", err));
 
       return transcription;
     } catch (error) {

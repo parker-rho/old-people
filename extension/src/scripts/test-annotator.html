@@ -173,8 +173,7 @@
       const parser = new DOMParser();
       const doc = parser.parseFromString(htmlString, "text/html");
 
-      // The createPayloadForAI function will add `data-ai-id` attributes to our in-memory doc.
-      const payload = DOMAnnotator.createPayloadForAI(doc);
+      const payload = DOMAnnotator.createAnnotatedHtml(doc);
       const payloadString = JSON.stringify(payload, null, 2);
       payloadOutput.value = payloadString;
 
@@ -199,14 +198,11 @@ Please respond with *only* the single, complete JSON object for the matching ele
     // 3. Find and highlight based on simulated AI response
     highlightBtn.addEventListener('click', () => {
       const aiResponse = aiResponseInput.value;
-      // Now, we need to load the HTML into the iframe so we can see the highlight.
-      // The `data-ai-id` attributes are NOT in the original HTML string, so we must
-      // re-run the annotation on the iframe's document to add them before highlighting.
       const frameDoc = pageFrame.contentWindow.document;
       frameDoc.open();
       frameDoc.write(document.getElementById('htmlInput').value);
       frameDoc.close();
-      DOMAnnotator.createPayloadForAI(frameDoc); // Re-annotate the live DOM
+      DOMAnnotator.createAnnotatedHtml(frameDoc); // Re-annotate the live DOM
       if (aiResponse) {
         DOMAnnotator.findAndHighlight(aiResponse, frameDoc);
       } else {
