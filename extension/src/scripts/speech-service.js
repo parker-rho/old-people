@@ -29,7 +29,7 @@ class SpeechService {
     try {
       // Request microphone access (or reuse existing stream)
       if (!this.stream) {
-        this.stream = await navigator.mediaDevices.getUserMedia({ 
+        this.stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
@@ -37,7 +37,7 @@ class SpeechService {
           }
         });
       }
-      
+
       this.audioChunks = [];
       this.isRecording = true;
       this.updateState('recording', 'Listening...');
@@ -52,13 +52,13 @@ class SpeechService {
       this.analyser.fftSize = 256; // Match waveform visualizer for consistency
       this.analyser.smoothingTimeConstant = 0.8;
       source.connect(this.analyser);
-      
+
       // Store source reference for cleanup (though we recreate it each time)
       this.audioSource = source;
 
       // Setup media recorder
       this.mediaRecorder = new MediaRecorder(this.stream);
-      
+
       this.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
@@ -75,7 +75,7 @@ class SpeechService {
       };
 
       this.mediaRecorder.start();
-      
+
       // Start silence detection
       this.detectSilence();
 
@@ -95,12 +95,12 @@ class SpeechService {
 
     const bufferLength = this.analyser.fftSize;
     const dataArray = new Uint8Array(bufferLength);
-    
+
     const checkVolume = () => {
       if (!this.isRecording) return;
 
       this.analyser.getByteTimeDomainData(dataArray);
-      
+
       // Calculate average volume (RMS)
       let sum = 0;
       for (let i = 0; i < bufferLength; i++) {
@@ -172,7 +172,7 @@ class SpeechService {
     try {
       // Create audio blob
       const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-      
+
       // Check if audio is too short
       if (audioBlob.size < 1000) {
         throw new Error('Recording too short. Please speak longer.');
@@ -183,30 +183,31 @@ class SpeechService {
 
       // Send to Flask server (which proxies to Whisper API)
       const transcription = await this.transcribeAudio(audioFile);
-      
+
       // Store transcription
       await this.storeTranscription(transcription);
-      
+
       this.updateState('completed', transcription.text);
-      
+
       if (this.onTranscriptionCallback) {
         this.onTranscriptionCallback(transcription);
       }
 
+      // Calling Agent 1: annotated html + prompt => output steps
       fetch("http://127.0.0.1:5000/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: transcription.text })
       })
-      .then(response => response.json())
-      .then(data => {
-        if (data.status === "success") {
-          console.log("✅ Instructions created successfully!");
-        } else {
-          console.error("❌ Python reported failure:", data.message);
-        }
-      })
-      .catch(err => console.error("🌐 Could not reach server:", err));
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === "success") {
+            console.log("✅ Instructions created successfully!");
+          } else {
+            console.error("❌ Python reported failure:", data.message);
+          }
+        })
+        .catch(err => console.error("🌐 Could not reach server:", err));
 
       return transcription;
     } catch (error) {
@@ -252,12 +253,12 @@ class SpeechService {
       try {
         // Get existing transcriptions
         const { transcriptions = [] } = await chrome.storage.local.get('transcriptions');
-        
+
         // Add just the text to array
         transcriptions.push(transcription.text);
-        
+
         // Save back to storage (keeps entire conversation history)
-        await chrome.storage.local.set({ 
+        await chrome.storage.local.set({
           transcriptions: transcriptions,
           lastTranscription: transcription.text
         });
@@ -272,7 +273,7 @@ class SpeechService {
    */
   updateState(state, message = null) {
     const stateData = { state, message, timestamp: Date.now() };
-    
+
     if (this.onStateChangeCallback) {
       this.onStateChangeCallback(stateData);
     }
