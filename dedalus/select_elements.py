@@ -95,6 +95,10 @@ def parse_steps_from_instructions(instructions: str) -> list[str]:
     Parses the instructions string into individual steps.
     Assumes steps are numbered like "1. Step one\n2. Step two"
     """
+    if not instructions or not instructions.strip():
+        logging.error("EMPTY instructions received!")
+        return []
+    
     lines = instructions.split('\n')
     steps = []
     current_step = ""
@@ -112,7 +116,11 @@ def parse_steps_from_instructions(instructions: str) -> list[str]:
     if current_step:
         steps.append(current_step.strip())
     
-    logging.info("Parsed %d steps from instructions", len(steps))
+    if len(steps) == 0:
+        logging.error("NO STEPS PARSED! Raw instructions: %s", instructions[:500])
+    else:
+        logging.info("Parsed %d steps from instructions", len(steps))
+    
     return steps
 
 
@@ -136,28 +144,63 @@ async def select_element_for_step(step: str, annotated_html: list[dict]) -> dict
     # Convert annotated HTML to a clean JSON string
     elements_json = json.dumps(annotated_html, indent=2)
     
-    prompt = f"""You are helping an elderly person navigate a webpage step-by-step.
+    prompt = f"""You are an expert at matching user instructions to webpage elements for elderly users.
 
-Current instruction step:
+INSTRUCTION STEP:
 {step}
 
-Available interactive elements on the page:
+AVAILABLE ELEMENTS:
 {elements_json}
 
-Task:
-1. Analyze if this step requires clicking or interacting with an element on the page
-2. If YES: Find the SINGLE BEST matching element from the list above
-3. If NO (step is informational only): Return null
+YOUR TASK:
+Identify which element (if any) the user should interact with for this step.
 
-IMPORTANT: 
-- Respond with ONLY the complete JSON object of the matching element (e.g., {{"id": "ai-5", "tag": "button", "text": "Unmute"}})
-- If no interaction is needed, respond with: null
-- Do not add any explanation or extra text
-- Return the element exactly as it appears in the list"""
+MATCHING RULES:
+1. **Action Words**: 
+   - "click/tap/press" → look for buttons, links
+   - "type/enter/input" → look for input fields, textareas
+   - "select/choose" → look for select dropdowns, buttons
+   
+2. **Fuzzy Matching** (these are equivalent):
+   - "Log in" = "Login" = "Sign in" = "Sign In" = "log in"
+   - "Email" = "email address" = "E-mail"
+   - "Password" = "pass" = "pwd"
+   - "Search" = "Find" = magnifying glass icon
+   
+3. **Prioritize by Type**:
+   - For "click the X button" → prefer tag="button" over tag="a"
+   - For "type in X" → prefer tag="input" or textarea
+   - Look at element's "type" and "role" fields for hints
+   
+4. **Informational Steps** (return null for these):
+   - "Wait for..."
+   - "You will see..."
+   - "Remember to..."
+   - Steps with NO specific element to click/type
+
+EXAMPLES:
+Step: "Click the Log In button"
+Elements: [{{"id": "ai-1", "tag": "button", "text": "Sign in"}}, {{"id": "ai-2", "tag": "a", "text": "Register"}}]
+→ Answer: {{"id": "ai-1", "tag": "button", "text": "Sign in"}}
+(matched because "Log In" ≈ "Sign in" and it's a button)
+
+Step: "Type your email address in the email box"
+Elements: [{{"id": "ai-3", "tag": "input", "text": "Email or phone number", "type": "text"}}, {{"id": "ai-4", "tag": "button", "text": "Submit"}}]
+→ Answer: {{"id": "ai-3", "tag": "input", "text": "Email or phone number", "type": "text"}}
+(matched because it's an input field for email)
+
+Step: "Wait for the page to load"
+→ Answer: null
+(informational, no interaction needed)
+
+OUTPUT FORMAT:
+- Return ONLY the JSON object of the matching element
+- OR return: null
+- NO explanations, NO extra text"""
 
     result = await runner.run(
         input=prompt,
-        model=["openai/gpt-4o-mini"],
+        model=["anthropic/claude-sonnet-4-20250514"],  # Claude is more precise at element matching
         stream=False,
         max_steps=1,
     )

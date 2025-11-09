@@ -43,15 +43,16 @@ class PopupController {
     // Note: speechService is a singleton from speech-service.js
     this.speechService = speechService;
     this.waveformVisualizer = new WaveformVisualizer('waveform-canvas');
+    this.ttsService = typeof ttsService !== 'undefined' ? ttsService : null;
 
     // Setup event handlers
     this.setupEventHandlers();
 
     // Setup speech service callbacks
-    this.speechService.onTranscription((transcription) => {
+    this.speechService.onTranscription(async (transcription) => {
       // Add user message to chat and process it
       // Note: We're already in THINKING state from the 'processing' state change
-      this.addChatMessage(transcription.text, 'user');
+      await this.addChatMessage(transcription.text, 'user');
       // Process the message to get agent response
       // processUserMessage will be called automatically via handleStateChange when we transition to THINKING
       // But since we're already in THINKING, we need to call it directly
@@ -517,11 +518,9 @@ class PopupController {
       // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Mock response (replace with actual agent response)
-      const response = await this.getAgentResponse(lastUserMessage.text);
-
-      // Add bot response to chat
-      this.addChatMessage(response, 'bot');
+      // Get agent response and start step-by-step guidance
+      // (Don't display full instructions - they'll be shown step-by-step)
+      await this.getAgentResponse(lastUserMessage.text);
 
       // Transition to responding state
       this.setState(STATES.RESPONDING);
@@ -636,7 +635,7 @@ class PopupController {
       if (result.completed) {
         this.isProcessingSteps = false;
         await this.delay(800);
-        this.addChatMessage('Great! All steps completed! 🎉', 'bot');
+        await this.addChatMessage('Great! All steps completed! 🎉', 'bot');
         return;
       }
       
@@ -647,7 +646,7 @@ class PopupController {
       await this.delay(600);
       
       // Show the step text to user
-      this.addChatMessage(result.step_text, 'bot');
+      await this.addChatMessage(result.step_text, 'bot');
       
       // Check if this step has a selected element
       if (result.selected_element) {
@@ -671,7 +670,7 @@ class PopupController {
       console.error('Error processing step:', error);
       this.isProcessingSteps = false;
       await this.delay(800);
-      this.addChatMessage('Sorry, I encountered an error. Please try again.', 'bot');
+      await this.addChatMessage('Sorry, I encountered an error. Please try again.', 'bot');
     }
   }
   
@@ -723,7 +722,7 @@ class PopupController {
     
     // Add reminder message
     await this.delay(500);
-    this.addChatMessage("I noticed you haven't clicked yet. Take your time - the element is still highlighted.", 'bot');
+    await this.addChatMessage("I noticed you haven't clicked yet. Take your time - the element is still highlighted.", 'bot');
     
     // Restart the timer - keep waiting for click
     if (this.currentSelectedElement && this.isProcessingSteps) {
@@ -769,12 +768,20 @@ class PopupController {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  addChatMessage(text, sender) {
+  async addChatMessage(text, sender) {
     // IMPORTANT: Add to conversation history IMMEDIATELY (synchronously)
     // This ensures the message is in history before processUserMessage runs
     // We'll add the element reference later in _addBubbleToPosition
     const messageEntry = { text, sender, timestamp: Date.now(), element: null };
     this.conversationHistory.push(messageEntry);
+
+    // Speak bot messages using text-to-speech (non-blocking)
+    if (sender === 'bot' && this.ttsService) {
+      // Fire-and-forget: don't await, let it play in background
+      this.ttsService.speak(text).catch(err => {
+        console.error('TTS error:', err);
+      });
+    }
 
     // Temporarily pause position monitoring to avoid false positives during bubble addition
     // We'll resume it after the bubble is positioned
@@ -827,9 +834,13 @@ class PopupController {
 
     // Wait a bit for removals to complete, then get updated list
     // Pass the messageEntry so we can update the element reference
-    setTimeout(() => {
-      this._addBubbleToPosition(text, sender, voiceButton, messageEntry);
-    }, existingBubbles.length >= MAX_BUBBLES ? 350 : 50);
+    // AWAIT this to ensure bubbles are added in correct order
+    const delay = existingBubbles.length >= MAX_BUBBLES ? 350 : 50;
+    await new Promise(resolve => setTimeout(resolve, delay));
+    this._addBubbleToPosition(text, sender, voiceButton, messageEntry);
+    
+    // Add small delay to ensure bubble is fully added before next step
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   _addBubbleToPosition(text, sender, voiceButton, messageEntry) {

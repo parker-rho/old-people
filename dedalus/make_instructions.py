@@ -42,31 +42,41 @@ async def make_instructions(prompt: str, context: list) -> str:
     logging.info("Starting instruction generation process.")
 
     result = await runner.run(
-        input=f"""When I mention the context, I mean the following abbreviated form of a website as a JSON of only 
-        the relevant HTML elements:
-        {str_context}
-        When I mention the prompt, I mean the following user request:
-        {prompt}
-        Now, follow these instructions strictly and do nothing else extra:
-        0. First note that as you craft your response, this is for an elderly person who struggles with the
-        internet. Make your instructions extremely clear and easy to follow.
-        1. Use the context to identify the current website. Then identify what website the prompt is talking about. 
-        If they don't match, notify the user in a single sentence that they are not on a relevant website and 
-        TERMINATE ENTIRELY. In all other cases, just continue to step 2 and completely reset the current 
-        response draft.
-        2. Use the prompt and the context to give an answer formatted in steps that only highlight a single 
-        interactable element on the user's screen. These instructions should make no reference to the context 
-        elements, and just use plain English to describe the elements. Use the internet to find any additional 
-        information you need.
-        3. Set these instructions as the final output with no preface, just begin with the steps and nothing else.
-        4. Terminate entirely and stop all processing.""",
+        input=f"""You are helping an elderly person navigate websites. They need SIMPLE, step-by-step instructions.
+
+USER'S REQUEST:
+{prompt}
+
+CURRENT WEBPAGE ELEMENTS:
+{str_context}
+
+YOUR TASK:
+Create clear, numbered instructions to help them complete their request on THIS EXACT webpage they're currently on.
+
+CRITICAL RULES:
+1. **ALWAYS create steps** - Even if the page seems slightly different than expected, give the best guidance you can with what's available
+2. **ONE ACTION PER STEP** - Never combine "find and click" in one step. Separate them:
+   - ❌ BAD: "Find the email box and click inside it"
+   - ✅ GOOD: "Click inside the box that says 'Email'"
+3. **Be direct** - Skip "look for" or "find" - just tell them what to click or type
+4. **Use simple language** - Describe elements like "the box that says X" or "the button labeled Y"
+5. **Number every step** - Format: "1. [instruction]\\n2. [instruction]\\n3. [instruction]"
+6. **No preamble** - Start DIRECTLY with step 1, no intro text
+7. **No duplicate actions** - Don't make them click the same element twice
+
+EXAMPLE (good):
+1. Click inside the box that says "Email" near the top of the page.
+2. Type your email address.
+3. Click inside the box below that says "Password".
+4. Type your password.
+5. Click the blue button that says "Log In".
+
+NOW RESPOND WITH NUMBERED STEPS ONLY:""",
         model=[
-            "openai/gpt-4.1-mini",
-            # "claude-sonnet-4-20250514",
+            "anthropic/claude-sonnet-4-20250514",  # Best for precise instruction-following
             ],
         mcp_servers= [
-            # "joerup/exa-mcp",        # Semantic search engine
-            "windsor/brave-search-mcp"  # Privacy-focused web search
+            "windsor/brave-search-mcp"  # For finding additional info if needed
         ],
         stream=False,
         max_steps=5,

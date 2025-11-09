@@ -9,35 +9,54 @@ if (typeof DOMAnnotator === 'undefined') {
       const annotated = [];
       let counter = 1;
 
-      interactiveElements.forEach(element => {
-        let text = (
-          element.innerText ||
-          element.textContent ||
-          element.getAttribute('title') ||
-          element.getAttribute('aria-label') ||
-          element.getAttribute('placeholder') ||
-          element.getAttribute('alt') ||
-          element.value ||
-          element.name
-        )?.trim();
+    interactiveElements.forEach(element => {
+      // Gather all possible text descriptions
+      let text = (
+        element.innerText ||
+        element.textContent ||
+        element.getAttribute('title') ||
+        element.getAttribute('aria-label') ||
+        element.getAttribute('placeholder') ||
+        element.getAttribute('alt') ||
+        element.value ||
+        element.name
+      )?.trim();
 
-        if (text) {
-          text = text.replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-        }
-        if (!text) {
-          text = `[${element.tagName.toLowerCase()}]`;
-        }
+      if (text) {
+        text = text.replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+      if (!text) {
+        text = `[${element.tagName.toLowerCase()}]`;
+      }
 
-        const id = `id-${counter++}`;
+      // Get additional context
+      const type = element.getAttribute('type') || '';
+      const role = element.getAttribute('role') || '';
+      const ariaLabel = element.getAttribute('aria-label') || '';
+      const placeholder = element.getAttribute('placeholder') || '';
+      
+      // Build description with context
+      let description = text.substring(0, 100);
+      const contextParts = [];
+      if (placeholder && !description.includes(placeholder)) contextParts.push(placeholder);
+      if (ariaLabel && !description.includes(ariaLabel)) contextParts.push(ariaLabel);
+      if (type) contextParts.push(`type=${type}`);
+      
+      if (contextParts.length > 0) {
+        description += ` (${contextParts.join(', ')})`;
+      }
 
-        element.setAttribute('data-id', id);
+      const id = `id-${counter++}`;
+      element.setAttribute('data-id', id);
 
-        annotated.push({
-          id: id,
-          tag: element.tagName.toLowerCase(),
-          text: text.substring(0, 100),
-        });
+      annotated.push({
+        id: id,
+        tag: element.tagName.toLowerCase(),
+        text: description.substring(0, 150),
+        type: type,
+        role: role
       });
+    });
 
       return annotated;
     }

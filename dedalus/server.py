@@ -19,6 +19,61 @@ loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
 
+@app.post("/text-to-speech")
+def text_to_speech():
+    """
+    Converts text to speech using ElevenLabs API
+    Keeps the API key secure on the server side
+    """
+    try:
+        # Get API key from environment
+        api_key = os.getenv('ELEVENLABS_API_KEY')
+        if not api_key:
+            return jsonify({"status": "error", "message": "ElevenLabs API key not configured"}), 500
+        
+        # Get text from request
+        data = request.get_json()
+        if not data or 'text' not in data:
+            return jsonify({"status": "error", "message": "No text provided"}), 400
+        
+        text = data['text']
+        voice_id = data.get('voice_id', 'EXAVITQu4vr4xnSDxMaL')  # Default to Rachel voice
+        
+        print(f"[TTS] Converting text (length: {len(text)}) with voice_id: {voice_id}")
+        
+        # Call ElevenLabs API
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+        headers = {
+            'Accept': 'audio/mpeg',
+            'Content-Type': 'application/json',
+            'xi-api-key': api_key
+        }
+        payload = {
+            'text': text,
+            'model_id': 'eleven_monolingual_v1',
+            'voice_settings': {
+                'stability': 0.5,
+                'similarity_boost': 0.5
+            }
+        }
+        
+        response = requests.post(url, json=payload, headers=headers)
+        
+        print(f"[TTS] ElevenLabs response: {response.status_code}, content length: {len(response.content)}")
+        
+        if response.status_code != 200:
+            error_msg = response.text
+            print(f"[TTS] Error from ElevenLabs: {error_msg}")
+            return jsonify({"status": "error", "message": f"Text-to-speech failed: {error_msg}"}), response.status_code
+        
+        # Return audio data as base64
+        import base64
+        audio_base64 = base64.b64encode(response.content).decode('utf-8')
+        return jsonify({"status": "success", "audio": audio_base64}), 200
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.post("/transcribe")
 def transcribe_audio():
     """

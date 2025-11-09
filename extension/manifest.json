@@ -25,6 +25,7 @@
         "src/scripts/content_script.js",
         "src/scripts/page-interaction.js",
         "src/scripts/speech-service.js",
+        "src/scripts/tts-service.js",
         "src/popup/waveform.js",
         "src/popup/popup.js"
       ],
