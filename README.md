@@ -1,11 +1,7 @@
-# old_people
+# Digital Literacy Helper
 
 WebExtension for Chrome.  
-Digital literacy for senior citizens.
-
-## Extension features
-
-* xxxxxx
+Improving digital literacy for senior citizens.
 
 ## Development & Build
 
@@ -21,31 +17,30 @@ pip install -r requirements.txt
 cd dedalus && python server.py
 ```
 
+3. Configure API keys:
+   - Create a `.env` file in the project root (not in the extension folder)
+   - Add your API keys (see main README.md for details)
+   - The `.env` file is already in `.gitignore` to keep your keys secure
+
 The server will run on `http://127.0.0.1:5000` and handles:
 - Audio transcription via OpenAI Whisper API (`/transcribe` endpoint)
 - Instruction generation via Dedalus API (`/parse` endpoint)
 
-### Extension Setup
+### Extension Installation
 
-*Ubuntu*
-```
-# Install build requirements
-sudo apt install nodejs npm
-sudo npm install -g terser
+1. Open Chrome and navigate to `chrome://extensions/`
+2. Enable "Developer mode" (toggle in the top right)
+3. Click "Load unpacked"
+4. Select this `extension` folder
+5. The extension should now be loaded and ready to use
 
-# Build package
-./tools/build.sh chrome
-
-# Temporary installation / debugging
-Chrome: https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked
-```
+**Note**: The extension requires the Flask server to be running for voice transcription to work.
 
 ### Configuration
 
 1. Create a `.env` file in the project root with your API keys:
 ```
 DEDALUS_API_KEY=your_dedalus_api_key
-DEDALUS_TEST_API_KEY=your_dedalus_test_api_key
 OPENAI_API_KEY=your_openai_api_key
 ```
 

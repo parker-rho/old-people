@@ -9,16 +9,6 @@ This implementation provides a professional voice interaction interface with:
 - **Chat Interface**: Message bubbles for conversation history
 - **Smooth Animations**: CSS transitions and animations
 
-## Prerequisites
-
-**Important**: The Flask server must be running for this to work:
-
-```bash
-cd ../../../dedalus && python server.py
-```
-
-The server handles audio transcription via the `/transcribe` endpoint, which proxies requests to the OpenAI Whisper API. API keys are stored securely in the `.env` file on the server side.
-
 ## Architecture
 
 ### File Structure
