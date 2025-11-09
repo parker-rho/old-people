@@ -7,39 +7,34 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <div class="popup-container">
-    <h2>Digital Literacy Helper</h2>
-    
-    <!-- Voice Input Section -->
-    <div class="voice-section">
-      <button id="mic-button" class="mic-button" aria-label="Start voice recording">
-        <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          <line x1="12" y1="19" x2="12" y2="23"></line>
-          <line x1="8" y1="23" x2="16" y2="23"></line>
-        </svg>
-        <span class="mic-text">Tap to Speak</span>
-      </button>
+  <!-- Voice Interaction Button - Only this exists initially -->
+  <button class="voice-button" id="voice-button" aria-label="Tap to ask">
+    <span class="voice-button-text" id="voice-button-text">Tap to ask</span>
+    <div class="bot-icon-container" id="bot-icon-container">
+      <svg class="bot-icon" id="bot-icon" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <!-- Bot face (shown in IDLE state) -->
+        <circle class="bot-face" cx="20" cy="20" r="18" fill="#5DA9E9" stroke="#4A8BC5" stroke-width="2"/>
+        <circle class="bot-eye bot-eye-left" cx="14" cy="18" r="2" fill="#000"/>
+        <circle class="bot-eye bot-eye-right" cx="26" cy="18" r="2" fill="#000"/>
+        <path class="bot-mouth" d="M 14 24 Q 20 28 26 24" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <circle class="bot-antenna" cx="20" cy="6" r="3" fill="#5DA9E9" stroke="#4A8BC5" stroke-width="1"/>
+      </svg>
       
-      <div id="status-message" class="status-message"></div>
+      <!-- Waveform Canvas (shown in LISTENING state) -->
+      <canvas class="waveform-canvas" id="waveform-canvas" width="40" height="40"></canvas>
       
-      <div id="transcription-result" class="transcription-result hidden"></div>
+      <!-- Loading Spinner (shown in THINKING state) -->
+      <svg class="loading-spinner" id="loading-spinner" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="#5DA9E9" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="28">
+          <animate attributeName="stroke-dasharray" dur="1.5s" values="0,113;56.5,56.5;0,113;0,113" repeatCount="indefinite"/>
+          <animate attributeName="stroke-dashoffset" dur="1.5s" values="0;-56.5;-113;-113" repeatCount="indefinite"/>
+        </circle>
+      </svg>
     </div>
-
-    <!-- Extension Toggle -->
-    <div class="toggle-row">
-      <label class="switch">
-        <input type="checkbox" id="toggle-extension">
-        <span class="slider round"></span>
-      </label>
-      <span class="status-text" id="status-text">Off</span>
-    </div>
-
-    <a href="#" class="options-button" id="options-button">Options</a>
-  </div>
+  </button>
 
   <script src="../scripts/speech-service.js"></script>
+  <script src="waveform.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

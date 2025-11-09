@@ -15,5 +15,4 @@ chrome.storage.onChanged.addListener((changes) => {
 });
 
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('Digital Literacy Helper installed');
-});
+  });

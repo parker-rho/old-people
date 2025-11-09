@@ -5,7 +5,6 @@
   "description": "Digital literacy teaching tool for senior citizens",
   "action": {
     "default_title": "Digital Literacy Helper",
-    "default_popup": "src/popup/popup.html",
     "default_icon": {
       "16": "assets/icons/16.png",
       "48": "assets/icons/48.png",
@@ -16,8 +15,27 @@
     "page": "src/ui/options.html",
     "open_in_tab": true
   },
-  "permissions": ["storage", "activeTab"],
-  "host_permissions": ["https://api.openai.com/*"],
+  "permissions": ["storage", "scripting", "activeTab"],
+  "host_permissions": ["<all_urls>", "https://api.openai.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/scripts/content_script.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/scripts/speech-service.js",
+        "src/popup/waveform.js",
+        "src/popup/popup.js",
+        "src/popup/popup.css"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "background": {
     "service_worker": "src/scripts/background.js"
   },

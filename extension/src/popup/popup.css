@@ -16,217 +16,403 @@
   --toggle-checked-bg: #06c;
 }
 
-body {
-  margin: 0;
-  font-family: sans-serif;
-  background: var(--bg-color);
-  width: 400px;
-  min-width: 400px;
-  padding: 15px;
-  color: var(--text-color);
+/* Only apply box-sizing to extension widget elements, not the entire page */
+/* This prevents interfering with the page's existing styles */
+#digital-literacy-widget,
+#digital-literacy-widget *,
+.chat-message-bubble,
+.voice-button,
+.voice-button * {
+  box-sizing: border-box;
 }
 
-.popup-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
+/* Floating widget styles - for injected widget on pages */
+#digital-literacy-widget {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  left: auto !important; /* Ensure left is not set */
+  top: auto !important; /* Ensure top is not set */
+  width: auto !important; /* Don't constrain width */
+  height: auto !important; /* Don't constrain height */
+  margin: 0 !important; /* No margins */
+  padding: 0 !important; /* No padding */
+  z-index: 2147483647 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+  pointer-events: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 0 !important;
+  /* Prevent layout shifts from affecting button position */
+  transform: translateZ(0) !important; /* Force GPU acceleration and layout isolation */
+  will-change: transform !important; /* Hint to browser for optimization */
+  isolation: isolate !important; /* Create new stacking context */
+  /* Ensure container is not affected by page layout */
+  contain: layout style paint !important; /* CSS containment to isolate from page */
+  overflow: visible !important; /* Allow bubbles to overflow */
 }
 
-.toggle-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
+#digital-literacy-widget > * {
+  pointer-events: auto !important;
 }
 
-.status-text {
-  margin-left: 10px;
+/* Popup window styles - REMOVED to prevent interfering with page scrolling */
+/* When this CSS is injected into web pages, body styles would affect the page's body element */
+/* Since the extension now works as a floating widget only, popup window styles are not needed */
+/* If popup.html is used in the future, it should have its own scoped stylesheet */
+
+/* Individual floating message bubbles - no container */
+.chat-message-bubble {
+  position: fixed !important;
+  padding: 12px 16px !important;
+  border-radius: 20px !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  word-wrap: break-word !important;
+  max-width: 280px !important;
+  min-width: 120px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  z-index: 2147483647 !important;
+  /* Allow scroll events to pass through - only capture click events for text selection */
+  pointer-events: auto !important;
+  /* Allow text selection but don't block scrolling */
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif !important;
+  /* CRITICAL: Allow all scrolling gestures to pass through bubbles */
+  /* This ensures page scrolling works even when bubbles are visible */
+  touch-action: pan-y pan-x pinch-zoom !important;
+  /* Also ensure mouse wheel scrolling works - bubbles won't capture scroll events */
+}
+
+.chat-message-bubble-user {
+  background: #000 !important;
+  color: #fff !important;
+  border-bottom-right-radius: 4px !important;
+  /* Right alignment is handled by JavaScript positioning */
+}
+
+.chat-message-bubble-bot {
+  background: #ffffff !important;
+  color: #000 !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-bottom-left-radius: 4px !important;
+  /* Left alignment is handled by JavaScript positioning */
+}
+
+.chat-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+/* Chat Messages - kept for popup window compatibility */
+.chat-message {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 18px;
   font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  animation: slideIn 0.3s ease-out;
 }
 
-/* Toggle Switch Styling */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 20px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--toggle-bg);
-  transition: 0.3s;
-  border-radius: 20px;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 14px;
-  width: 14px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: var(--toggle-checked-bg);
-}
-
-input:checked + .slider:before {
-  transform: translateX(20px);
-}
-
-.options-button {
-  display: inline-block;
-  padding: 8px 16px;
-  font-size: 14px;
-  background-color: var(--accent-color);
+.chat-message-user {
+  align-self: flex-end;
+  background: #000;
   color: #fff;
-  border: none;
-  border-radius: 4px;
-  text-decoration: none;
-  transition: background-color 0.2s ease;
-  text-align: center;
+  border-bottom-right-radius: 4px;
 }
 
-.options-button:hover {
-  background-color: #005bb5; /* darker blue on hover */
+.chat-message-bot {
+  align-self: flex-start;
+  background: #e8e8e8;
+  color: #000;
+  border-bottom-left-radius: 4px;
 }
 
-/* Voice Input Styling */
-.voice-section {
-  width: 100%;
-  margin-bottom: 25px;
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Voice Button Wrapper */
+.voice-button-wrapper {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-}
-
-.mic-button {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  border: none;
-  background: linear-gradient(135deg, var(--accent-color), #0099ff);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
-  font-size: 14px;
-  font-weight: 600;
 }
 
-.mic-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(0, 102, 204, 0.4);
+/* Popup window button positioning */
+/* REMOVED: body #voice-button - would affect page when CSS is injected */
+/* Widget button positioning is handled by #digital-literacy-widget styles */
+
+/* Voice Button - Floating widget style */
+.voice-button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 24px !important;
+  background: #ffffff !important;
+  color: #000 !important;
+  border: none !important;
+  border-radius: 50px !important;
+  cursor: pointer !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  min-width: 280px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  position: relative !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
 }
 
-.mic-button:active {
-  transform: scale(0.95);
+/* Popup window button styles - REMOVED to prevent affecting page */
+/* Widget button styles are handled by #digital-literacy-widget .voice-button above */
+
+/* Floating widget button overrides */
+#digital-literacy-widget .voice-button {
+  padding: 14px 24px !important;
+  background: #ffffff !important;
+  color: #000 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  overflow: visible !important;
 }
 
-.mic-button.recording {
-  background: linear-gradient(135deg, #ff4444, #cc0000);
-  animation: pulse 1.5s ease-in-out infinite;
+.voice-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
-.mic-button.processing {
-  background: linear-gradient(135deg, #ffaa00, #ff8800);
-  cursor: wait;
+.voice-button:active {
+  transform: translateY(0);
 }
 
-.mic-button.processing .mic-icon {
-  animation: spin 1s linear infinite;
+.voice-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(6, 108, 192, 0.3);
 }
 
-.mic-button:disabled {
-  opacity: 0.6;
+/* State-specific button styles - popup window */
+.voice-button.state-idle {
+  background: #000;
+}
+
+.voice-button.state-listening {
+  background: #000;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.voice-button.state-thinking {
+  background: #333;
   cursor: not-allowed;
 }
 
-.mic-icon {
-  width: 36px;
-  height: 36px;
+.voice-button.state-responding {
+  background: #333;
+  animation: bounce 1s ease-in-out infinite;
+  cursor: not-allowed;
 }
 
-.mic-text {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+/* Floating widget state overrides */
+#digital-literacy-widget .voice-button.state-idle {
+  background: #ffffff !important;
+}
+
+#digital-literacy-widget .voice-button.state-listening {
+  background: #ffffff !important;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+#digital-literacy-widget .voice-button.state-thinking {
+  background: #f8f8f8 !important;
+}
+
+#digital-literacy-widget .voice-button.state-responding {
+  background: #f8f8f8 !important;
 }
 
 @keyframes pulse {
   0%, 100% {
-    box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+    box-shadow: 0 4px 16px rgba(93, 169, 233, 0.25), 0 2px 4px rgba(93, 169, 233, 0.15);
   }
   50% {
-    box-shadow: 0 4px 25px rgba(255, 68, 68, 0.8);
+    box-shadow: 0 6px 24px rgba(93, 169, 233, 0.4), 0 4px 8px rgba(93, 169, 233, 0.25);
   }
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
   }
-  to {
-    transform: rotate(360deg);
+  50% {
+    transform: translateY(-3px);
   }
 }
 
-.status-message {
-  text-align: center;
-  font-size: 14px;
-  color: var(--text-color);
-  min-height: 20px;
-  opacity: 0.8;
+/* Voice Button Text */
+.voice-button-text {
+  flex: 1;
+  text-align: left;
+  margin-right: 12px;
+  user-select: none;
+  color: #000;
 }
 
-.status-message.error {
-  color: #ff4444;
-  font-weight: 600;
+/* Popup window text color - REMOVED */
+/* body #voice-button .voice-button-text would affect page when CSS is injected */
+/* Widget button text styles are handled by .voice-button-text and #digital-literacy-widget .voice-button-text above */
+
+/* Floating widget text color */
+#digital-literacy-widget .voice-button-text {
+  color: #000;
 }
 
-.transcription-result {
+/* Bot Icon Container */
+.bot-icon-container {
+  width: 40px;
+  height: 40px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.bot-icon,
+.waveform-canvas,
+.loading-spinner {
   width: 100%;
-  padding: 12px;
-  background: rgba(0, 102, 204, 0.1);
-  border-radius: 8px;
-  border-left: 3px solid var(--accent-color);
-  font-size: 14px;
-  line-height: 1.5;
-  max-height: 150px;
-  overflow-y: auto;
+  height: 100%;
+  display: block;
 }
 
-.transcription-result.hidden {
+/* Bot Icon SVG */
+.bot-icon {
+  transition: transform 0.3s ease;
+}
+
+.voice-button:hover .bot-icon {
+  transform: scale(1.1);
+}
+
+.bot-face {
+  transition: fill 0.3s ease;
+}
+
+.bot-eye {
+  animation: blink 3s infinite;
+}
+
+@keyframes blink {
+  0%, 90%, 100% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0.3;
+  }
+}
+
+.bot-mouth {
+  transition: d 0.3s ease;
+}
+
+.bot-antenna {
+  animation: antennaBounce 2s ease-in-out infinite;
+}
+
+@keyframes antennaBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Waveform Canvas */
+.waveform-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: none;
 }
 
-.transcription-result strong {
-  display: block;
-  margin-bottom: 5px;
-  color: var(--accent-color);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.waveform-canvas[style*="display: block"] {
+  animation: waveformFadeIn 0.3s ease;
 }
+
+@keyframes waveformFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+}
+
+.loading-spinner[style*="display: block"] {
+  animation: spinnerFadeIn 0.3s ease;
+}
+
+@keyframes spinnerFadeIn {
+  from {
+    opacity: 0;
+    transform: rotate(0deg) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+  .voice-button {
+    min-width: 240px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  
+  .bot-icon-container {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .chat-container {
+    padding: 16px;
+  }
+}
+
+/* Accessibility */
+.voice-button:focus-visible {
+  outline: 2px solid #5DA9E9;
+  outline-offset: 2px;
+}
+
+/* Dark theme adjustments - popup window only */
+/* REMOVED: body[data-theme="dark"] selectors - would affect page when CSS is injected */
+/* Dark theme styles should be scoped to widget elements only if needed in the future */
+/* Use #digital-literacy-widget[data-theme="dark"] or .chat-message-bubble[data-theme="dark"] instead */
