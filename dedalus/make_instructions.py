@@ -19,15 +19,15 @@ logging.basicConfig(
 # Load environment variables from a .env file
 load_dotenv()
 
-def read_convo(filename:str) -> list[str]:
-    """
-    Returns the current conversation with the user from a JSON file in the format of an array.
-    The most recent message is at the end of the array.
-    """
-    with open(filename, "r") as file:
-        data = json.load(file)
-    logging.info("Read conversation from %s", filename)
-    return data["convo"]
+# def read_convo(filename:str) -> list[str]:
+#     """
+#     Returns the current conversation with the user from a JSON file in the format of an array.
+#     The most recent message is at the end of the array.
+#     """
+#     with open(filename, "r") as file:
+#         data = json.load(file)
+#     logging.info("Read conversation from %s", filename)
+#     return data["convo"]
 
 def write_instructions(filename:str, instructions:str):
     """
@@ -43,29 +43,33 @@ def write_instructions(filename:str, instructions:str):
     logging.info("Wrote instructions to %s", filename)
     return
 
-async def make_instructions():
+async def make_instructions(prompt: str) -> str:
     client = AsyncDedalus()
     runner = DedalusRunner(client)
 
     logging.info("Starting instruction generation process.")
 
     result = await runner.run(
-        input="""Follow these instructions strictly and do nothing else extra: 
-        1. Use your tools to read from dedalus.json and use the entire context of the conversation to
-        answer the most recent prompt by searching the internet for instructions. 
-        2. Write the instructions back to dedalus.json with your tools. 
-        3. Return True if writing was successful, False otherwise in the final output. 
-        4. Terminate entirely and stop all processing.""",
-        model=["openai/gpt-5"],
-        mcp_servers= "windsor/brave-search-mcp",  # Privacy-focused web search
-        tools=[read_convo, write_instructions],
+        input="Follow these instructions strictly and do nothing else extra: \n1. Given prompt" + prompt 
+        +  """give an answer formatted in steps for an elderly person who struggles with the internet 
+        by browsing the internet for instructions. 
+        2. Set these instructions as the final output and nothing else.
+        3. Terminate entirely and stop all processing.""",
+        model=[
+            "openai/gpt-4.1-mini",
+            # "claude-sonnet-4-20250514",
+            ],
+        mcp_servers= [
+            # "joerup/exa-mcp",        # Semantic search engine
+            "windsor/brave-search-mcp"  # Privacy-focused web search
+        ],
         stream=False,
-        max_steps=7,
+        max_steps=5,
         )
-        
-    if result.final_output:
-        logging.info("Successfully wrote instructions.")
-    else:
-        logging.error("Failed to write instructions.")
+    
+    logging.info("Instruction generation process completed.")
+
+    # Optionally writes full instructions to file for record-keeping
+    write_instructions("dedalus.json", result.final_output)
 
     return result.final_output

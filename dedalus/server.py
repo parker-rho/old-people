@@ -12,7 +12,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Create or reuse a running event loop (important for reliability)
+# Create or reuse a global event loop
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
@@ -78,16 +78,37 @@ def transcribe_audio():
 @app.post("/parse")
 def run_instructions():
     """
-    Runs the async make_instructions() when the Chrome extension calls /parse
+    Runs the async make_instructions() when the Chrome extension calls /parse,
+    using the 'message' string sent in the request body.
+    Includes error handling for missing fields and unexpected exceptions.
     """
-    # Run the async task synchronously in Flask
-    result = loop.run_until_complete(make_instructions())
+    try:
+        # Parse JSON from request
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "Request body must be JSON"}), 400
 
-    # If make_instructions() returns something, return it
-    if result:
-        return jsonify({"status": "success", "result": "successfully wrote instructions"}), 200
-    else:
-        return jsonify({"status": "error", "message": "failed to write instructions"}), 500
+        if "message" not in data:
+            return jsonify({"status": "error", "message": "Missing 'message' field in request body"}), 400
+
+        prompt = data["message"]
+
+        # Run the async task synchronously
+        try:
+            result = loop.run_until_complete(make_instructions(prompt))
+        except Exception as async_err:
+            return jsonify({
+                "status": "error",
+                "message": f"Make instructions function failed: {str(async_err)}"
+            }), 500
+
+        # Return result
+        return jsonify({"status": "success", "result": result}), 200
+
+
+    except Exception as e:
+        # Catch any other unexpected errors
+        return jsonify({"status": "error", "message": f"Unexpected server error: {str(e)}"}), 500
 
 
 if __name__ == "__main__":

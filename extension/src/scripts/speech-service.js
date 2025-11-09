@@ -194,12 +194,19 @@ class SpeechService {
       }
 
       fetch("http://127.0.0.1:5000/parse", {
-        method: "POST"
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: transcription.text })
       })
       .then(response => response.json())
       .then(data => {
-        // Instructions processing completed
-      });
+        if (data.status === "success") {
+          console.log("✅ Instructions created successfully!");
+        } else {
+          console.error("❌ Python reported failure:", data.message);
+        }
+      })
+      .catch(err => console.error("🌐 Could not reach server:", err));
 
       return transcription;
     } catch (error) {
