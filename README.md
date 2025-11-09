@@ -1,4 +1,4 @@
-# Digital Literacy Helper
+# Lume
 
 WebExtension for Chrome.  
 Improving digital literacy for senior citizens.
